@@ -1,27 +1,30 @@
-var express = require('express');
-var path = require('path');
-var logger = require('morgan');
 
-var weibo = require('./routes/weibo');
+const Koa = require('koa');
+const serve = require('koa-static');
+const router = require('./core/router');
+const logger = require('./core/logger');
 
-var app = express();
+const app = new Koa();
 
-// app.use(logger('dev'));
-app.use(express.static(path.join(__dirname, 'public')));
+// enable X-Forwarded-For
+app.proxy = true;
 
-app.use('/rss', weibo);
-
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  var err = new Error('Not Found');
-  err.status = 404;
-  next(err);
+// logger
+app.use(async (ctx, next) => {
+  const startTime = Date.now();
+  logger.debug(`${ctx.req.method} ${ctx.originalUrl} ${ctx.ip}`);
+  await next();
+  logger.info(`[${ctx.status}] ${ctx.req.method} ${ctx.originalUrl} ${ctx.ip} ${Date.now() - startTime}ms`);
 });
 
-// error handler
-app.use(function(err, req, res, next) {
-  res.status(err.status || 500);
-  res.send(err.status === 404 ? 'Not Found' : 'error happened');
-});
+app.use(serve(__dirname + '/public'));
+app.use(router.routes());
+
+app.start = function (port) {
+  app.listen(port, function () {
+    logger.info(`weibo-rss start`);
+    logger.info(`Listening Port ${port}`);
+  });
+};
 
 module.exports = app;

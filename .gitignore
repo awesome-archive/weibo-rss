@@ -43,4 +43,7 @@ crashlytics-build.properties
 fabric.properties
 
 /node_modules/
-/logs/weibo-rss*
+
+/data/*
+!/data/.gitkeep
+package-lock.json
